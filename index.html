@@ -549,7 +549,7 @@
       }
     }
 
-    // --- FREE TINYURL SHORTENER & UTILITIES ---
+    // --- INSTANT REDIRECT SHORTENER (IS.GD VIA ALLORIGINS) ---
 
     async function shortenUrl(inputId) {
       const inputEl = document.getElementById(inputId);
@@ -559,12 +559,18 @@
       try {
         inputEl.value = "Shortening...";
         
-        // Uses TinyURL's free plaintext API (CORS-friendly on HTTPS)
-        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-        const shortUrl = await res.text();
-
-        if (shortUrl && shortUrl.startsWith("http")) {
-          inputEl.value = shortUrl;
+        // Target is.gd API via free open-source CORS proxy
+        const targetUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        
+        // Extract returned payload
+        const parsedData = JSON.parse(data.contents);
+        
+        if (parsedData.shorturl) {
+          inputEl.value = parsedData.shorturl;
         } else {
           alert("Error shortening link.");
           inputEl.value = longUrl;
