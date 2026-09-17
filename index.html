@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AJG Forms</title>
+  <!-- LZ-String for efficient link compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+  <style>
+    :root {
+      --primary: #673ab7;
+      --primary-light: #f3e5f5;
+      --bg: #f0f2f5;
+      --card-bg: #ffffff;
+      --text: #202124;
+      --border: #dadce0;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 770px;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-radius: 8px;
+      border-top: 10px solid var(--primary);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: none;
+      font-weight: 600;
+      color: #5f6368;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    input[type="text"]:focus, textarea:focus, select:focus {
+      border-color: var(--primary);
+    }
+
+    .form-title-input {
+      font-size: 28px;
+      font-weight: bold;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      padding: 4px 0;
+    }
+
+    .form-desc-input {
+      font-size: 14px;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      padding: 4px 0;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: #d93025;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .option-row input[type="text"] {
+      margin-bottom: 0;
+    }
+
+    .actions-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .link-output-group {
+      margin-top: 15px;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .link-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .link-row input {
+      margin-bottom: 0;
+      background: #fff;
+    }
+
+    .response-card {
+      background: #f8f9fa;
+      border-left: 4px solid var(--primary);
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Top Navigation Tabs -->
+    <div class="nav-tabs" id="navTabs">
+      <button class="tab-btn active" id="tabEdit" onclick="switchTab('edit')">Editor</button>
+      <button class="tab-btn" id="tabView" onclick="switchTab('view')">Fill Form</button>
+      <button class="tab-btn" id="tabResponses" onclick="switchTab('responses')">Responses</button>
+    </div>
+
+    <!-- EDITOR VIEW -->
+    <div id="editorSection">
+      <header>
+        <input type="text" id="formTitle" class="form-title-input" value="Untitled Form" placeholder="Form Title">
+        <input type="text" id="formDesc" class="form-desc-input" value="" placeholder="Form Description">
+      </header>
+
+      <div id="questionsContainer"></div>
+
+      <button class="btn btn-secondary" onclick="addQuestion()" style="width: 100%; margin-bottom: 16px;">+ Add Question</button>
+
+      <div class="card">
+        <h3>Save & Share Form</h3>
+        <p style="font-size: 13px; color: #666;">Generate viewable links for users or editable links for yourself.</p>
+
+        <div class="actions-bar">
+          <button class="btn" onclick="generateLinks()">Generate Links</button>
+        </div>
+
+        <div id="linkResults" class="hidden">
+          <!-- View Link Block -->
+          <div class="link-output-group">
+            <label><strong>Form Filler Link (View)</strong></label>
+            <div class="link-row">
+              <input type="text" id="viewUrlInput" readonly>
+              <button class="btn btn-secondary" onclick="copyToClipboard('viewUrlInput')">Copy</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('viewUrlInput')">Shorten</button>
+            </div>
+          </div>
+
+          <!-- Edit Link Block -->
+          <div class="link-output-group">
+            <label><strong>Form Editor Link (Edit)</strong></label>
+            <div class="link-row">
+              <input type="text" id="editUrlInput" readonly>
+              <button class="btn btn-secondary" onclick="copyToClipboard('editUrlInput')">Copy</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('editUrlInput')">Shorten</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILLER / VIEW SECTION -->
+    <div id="viewSection" class="hidden">
+      <header>
+        <h1 id="viewTitle" style="margin: 0 0 10px 0;"></h1>
+        <p id="viewDesc" style="margin: 0; color: #5f6368;"></p>
+      </header>
+
+      <form id="fillableForm" onsubmit="handleFormSubmit(event)">
+        <div id="fillableQuestions"></div>
+        <button type="submit" class="btn">Submit Response</button>
+      </form>
+    </div>
+
+    <!-- RESPONSES SECTION -->
+    <div id="responsesSection" class="hidden">
+      <header>
+        <h2>Form Responses</h2>
+        <p style="color: #666; font-size: 14px;">Submitted responses stored locally on this device.</p>
+        <button class="btn btn-danger" onclick="clearResponses()">Clear All Responses</button>
+      </header>
+
+      <div class="card" id="responsesList"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let formSchema = {
+      title: "Untitled Form",
+      description: "",
+      questions: []
+    };
+
+    // Initialize Page on Load
+    window.onload = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      if (urlParams.has('view')) {
+        const compressedData = urlParams.get('view');
+        loadSchemaFromCompressed(compressedData);
+        switchTab('view');
+        document.getElementById('navTabs').style.display = 'none'; // Hide editor nav when viewing
+      } else if (urlParams.has('edit')) {
+        const compressedData = urlParams.get('edit');
+        loadSchemaFromCompressed(compressedData);
+        renderEditor();
+        switchTab('edit');
+      } else {
+        // Default blank setup
+        addQuestion('Short Answer');
+        renderEditor();
+      }
+    };
+
+    // Tab Switching Logic
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('editorSection').classList.add('hidden');
+      document.getElementById('viewSection').classList.add('hidden');
+      document.getElementById('responsesSection').classList.add('hidden');
+
+      if (tab === 'edit') {
+        document.getElementById('tabEdit').classList.add('active');
+        document.getElementById('editorSection').classList.remove('hidden');
+      } else if (tab === 'view') {
+        document.getElementById('tabView').classList.add('active');
+        document.getElementById('viewSection').classList.remove('hidden');
+        syncSchemaFromEditor();
+        renderFillableForm();
+      } else if (tab === 'responses') {
+        document.getElementById('tabResponses').classList.add('active');
+        document.getElementById('responsesSection').classList.remove('hidden');
+        renderResponses();
+      }
+    }
+
+    // --- EDITOR LOGIC ---
+
+    function addQuestion(type = 'Short Answer') {
+      formSchema.questions.push({
+        id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        title: "Question Title",
+        type: type,
+        options: ["Option 1"]
+      });
+      renderEditor();
+    }
+
+    function removeQuestion(index) {
+      formSchema.questions.splice(index, 1);
+      renderEditor();
+    }
+
+    function addOption(qIndex) {
+      formSchema.questions[qIndex].options.push(`Option ${formSchema.questions[qIndex].options.length + 1}`);
+      renderEditor();
+    }
+
+    function removeOption(qIndex, optIndex) {
+      formSchema.questions[qIndex].options.splice(optIndex, 1);
+      renderEditor();
+    }
+
+    function syncSchemaFromEditor() {
+      formSchema.title = document.getElementById('formTitle').value;
+      formSchema.description = document.getElementById('formDesc').value;
+
+      formSchema.questions.forEach((q, i) => {
+        const titleEl = document.getElementById(`q_title_${i}`);
+        const typeEl = document.getElementById(`q_type_${i}`);
+        if (titleEl) q.title = titleEl.value;
+        if (typeEl) q.type = typeEl.value;
+
+        if (['Multiple Choice', 'Checkboxes', 'Dropdown'].includes(q.type)) {
+          q.options.forEach((_, optIdx) => {
+            const optEl = document.getElementById(`q_${i}_opt_${optIdx}`);
+            if (optEl) q.options[optIdx] = optEl.value;
+          });
+        }
+      });
+    }
+
+    function renderEditor() {
+      document.getElementById('formTitle').value = formSchema.title;
+      document.getElementById('formDesc').value = formSchema.description;
+
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = '';
+
+      formSchema.questions.forEach((q, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        let optionsHTML = '';
+        if (['Multiple Choice', 'Checkboxes', 'Dropdown'].includes(q.type)) {
+          optionsHTML = `<div style="margin-top: 10px;">
+            <label style="font-size:12px; font-weight:bold;">Options:</label>`;
+          q.options.forEach((opt, optIdx) => {
+            optionsHTML += `
+              <div class="option-row">
+                <input type="text" id="q_${i}_opt_${optIdx}" value="${escapeHtml(opt)}" onchange="syncSchemaFromEditor()">
+                <button class="btn btn-secondary btn-danger" onclick="removeOption(${i}, ${optIdx})">✕</button>
+              </div>`;
+          });
+          optionsHTML += `<button class="btn btn-secondary" onclick="addOption(${i})" style="padding: 4px 8px; font-size:12px;">+ Add Option</button></div>`;
+        }
+
+        card.innerHTML = `
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="q_title_${i}" value="${escapeHtml(q.title)}" onchange="syncSchemaFromEditor()" placeholder="Question Title" style="flex: 2; margin-bottom:0;">
+            <select id="q_type_${i}" onchange="formSchema.questions[${i}].type = this.value; renderEditor();" style="flex: 1; margin-bottom:0;">
+              <option value="Short Answer" ${q.type === 'Short Answer' ? 'selected' : ''}>Short Answer</option>
+              <option value="Paragraph" ${q.type === 'Paragraph' ? 'selected' : ''}>Paragraph</option>
+              <option value="Multiple Choice" ${q.type === 'Multiple Choice' ? 'selected' : ''}>Multiple Choice</option>
+              <option value="Checkboxes" ${q.type === 'Checkboxes' ? 'selected' : ''}>Checkboxes</option>
+              <option value="Dropdown" ${q.type === 'Dropdown' ? 'selected' : ''}>Dropdown</option>
+            </select>
+          </div>
+          ${optionsHTML}
+          <div style="margin-top: 12px; text-align: right;">
+            <button class="btn btn-danger" onclick="removeQuestion(${i})" style="padding: 6px 12px; font-size: 12px;">Delete Question</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // --- VIEW / FILLER LOGIC ---
+
+    function renderFillableForm() {
+      document.getElementById('viewTitle').innerText = formSchema.title || "Untitled Form";
+      document.getElementById('viewDesc').innerText = formSchema.description || "";
+
+      const container = document.getElementById('fillableQuestions');
+      container.innerHTML = '';
+
+      formSchema.questions.forEach((q, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        let inputHTML = '';
+
+        if (q.type === 'Short Answer') {
+          inputHTML = `<input type="text" name="${q.id}" required>`;
+        } else if (q.type === 'Paragraph') {
+          inputHTML = `<textarea name="${q.id}" rows="3" required></textarea>`;
+        } else if (q.type === 'Multiple Choice') {
+          inputHTML = q.options.map(opt => `
+            <label style="display:block; margin-bottom: 6px;">
+              <input type="radio" name="${q.id}" value="${escapeHtml(opt)}" required> ${escapeHtml(opt)}
+            </label>
+          `).join('');
+        } else if (q.type === 'Checkboxes') {
+          inputHTML = q.options.map(opt => `
+            <label style="display:block; margin-bottom: 6px;">
+              <input type="checkbox" name="${q.id}" value="${escapeHtml(opt)}"> ${escapeHtml(opt)}
+            </label>
+          `).join('');
+        } else if (q.type === 'Dropdown') {
+          inputHTML = `
+            <select name="${q.id}" required>
+              <option value="" disabled selected>Select an option</option>
+              ${q.options.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
+            </select>`;
+        }
+
+        card.innerHTML = `
+          <label style="font-weight: 600; display: block; margin-bottom: 10px;">${escapeHtml(q.title)}</label>
+          ${inputHTML}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const responseObj = {
+        timestamp: new Date().toLocaleString(),
+        answers: {}
+      };
+
+      formSchema.questions.forEach(q => {
+        if (q.type === 'Checkboxes') {
+          responseObj.answers[q.title] = formData.getAll(q.id);
+        } else {
+          responseObj.answers[q.title] = formData.get(q.id);
+        }
+      });
+
+      // Save to LocalStorage
+      const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
+      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      existing.push(responseObj);
+      localStorage.setItem(storageKey, JSON.stringify(existing));
+
+      alert('Response submitted successfully!');
+      e.target.reset();
+    }
+
+    // --- RESPONSES VIEW LOGIC ---
+
+    function renderResponses() {
+      const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
+      const responses = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const container = document.getElementById('responsesList');
+
+      if (responses.length === 0) {
+        container.innerHTML = '<p style="color: #666;">No responses submitted yet.</p>';
+        return;
+      }
+
+      container.innerHTML = `<h3>Total Responses: ${responses.length}</h3>`;
+      
+      responses.forEach((resp, idx) => {
+        const item = document.createElement('div');
+        item.className = 'response-card';
+        
+        let answersHTML = '';
+        for (let [qTitle, answer] of Object.entries(resp.answers)) {
+          const formattedAns = Array.isArray(answer) ? answer.join(', ') : answer;
+          answersHTML += `<div><strong>${escapeHtml(qTitle)}:</strong> ${escapeHtml(formattedAns || 'N/A')}</div>`;
+        }
+
+        item.innerHTML = `
+          <div style="font-size: 12px; color: #777; margin-bottom: 6px;">#${idx + 1} - ${resp.timestamp}</div>
+          ${answersHTML}
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function clearResponses() {
+      if (confirm('Are you sure you want to clear all responses for this form title?')) {
+        const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
+        localStorage.removeItem(storageKey);
+        renderResponses();
+      }
+    }
+
+    // --- DATA / URL COMPRESSION LOGIC ---
+
+    function generateLinks() {
+      syncSchemaFromEditor();
+      const jsonString = JSON.stringify(formSchema);
+      const compressed = LZString.compressToEncodedURIComponent(jsonString);
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const viewUrl = `${baseUrl}?view=${compressed}`;
+      const editUrl = `${baseUrl}?edit=${compressed}`;
+
+      document.getElementById('viewUrlInput').value = viewUrl;
+      document.getElementById('editUrlInput').value = editUrl;
+      document.getElementById('linkResults').classList.remove('hidden');
+    }
+
+    function loadSchemaFromCompressed(compressedData) {
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
+        if (decompressed) {
+          formSchema = JSON.parse(decompressed);
+        }
+      } catch (err) {
+        console.error("Failed to parse form data from URL", err);
+        alert("Invalid or corrupted form link.");
+      }
+    }
+
+    // --- FREE TINYURL SHORTENER & UTILITIES ---
+
+    async function shortenUrl(inputId) {
+      const inputEl = document.getElementById(inputId);
+      const longUrl = inputEl.value;
+      if (!longUrl) return;
+
+      try {
+        inputEl.value = "Shortening...";
+        
+        // Uses TinyURL's free plaintext API (CORS-friendly on HTTPS)
+        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        const shortUrl = await res.text();
+
+        if (shortUrl && shortUrl.startsWith("http")) {
+          inputEl.value = shortUrl;
+        } else {
+          alert("Error shortening link.");
+          inputEl.value = longUrl;
+        }
+      } catch (e) {
+        alert("Network error: Could not shorten link.");
+        inputEl.value = longUrl;
+      }
+    }
+
+    function copyToClipboard(inputId) {
+      const inputEl = document.getElementById(inputId);
+      inputEl.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
