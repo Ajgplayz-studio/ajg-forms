@@ -548,7 +548,7 @@
       }
     }
 
-    // --- SHORTENER LOGIC (CLEANURI VIA CORSPROXY) ---
+    // --- WORKING SHORTENER LOGIC (TINYURL VIA CORSPROXY) ---
 
     async function shortenUrl(inputId) {
       const inputEl = document.getElementById(inputId);
@@ -560,25 +560,20 @@
       inputEl.value = "Shortening...";
 
       try {
-        const response = await fetch("https://corsproxy.io/?https://cleanuri.com/api/v1/shorten", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: new URLSearchParams({ url: longUrl })
-        });
+        const targetUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
 
-        if (!response.ok) throw new Error("Shortening request failed");
+        if (!response.ok) throw new Error("Proxy error");
 
-        const data = await response.json();
+        const shortUrl = await response.text();
 
-        if (data.result_url) {
-          inputEl.value = data.result_url;
+        if (shortUrl && shortUrl.trim().startsWith("http")) {
+          inputEl.value = shortUrl.trim();
         } else {
-          throw new Error("Invalid response format");
+          throw new Error("Invalid response");
         }
       } catch (err) {
-        alert("Could not shorten link. Returning original URL.");
+        alert("Could not shorten link. Restoring original URL.");
         inputEl.value = originalValue;
       }
     }
