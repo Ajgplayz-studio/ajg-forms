@@ -134,6 +134,7 @@
 
     .btn-danger {
       background: #d93025;
+      color: white;
     }
 
     .option-row {
@@ -224,7 +225,7 @@
             <div class="link-row">
               <input type="text" id="viewUrlInput" readonly>
               <button class="btn btn-secondary" onclick="copyToClipboard('viewUrlInput')">Copy</button>
-              <button class="btn btn-secondary" onclick="shortenUrl('viewUrlInput')">Shorten</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('viewUrlInput')">Shorten (is.gd)</button>
             </div>
           </div>
 
@@ -234,7 +235,7 @@
             <div class="link-row">
               <input type="text" id="editUrlInput" readonly>
               <button class="btn btn-secondary" onclick="copyToClipboard('editUrlInput')">Copy</button>
-              <button class="btn btn-secondary" onclick="shortenUrl('editUrlInput')">Shorten</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('editUrlInput')">Shorten (is.gd)</button>
             </div>
           </div>
         </div>
@@ -282,14 +283,13 @@
         const compressedData = urlParams.get('view');
         loadSchemaFromCompressed(compressedData);
         switchTab('view');
-        document.getElementById('navTabs').style.display = 'none'; // Hide editor nav when viewing
+        document.getElementById('navTabs').style.display = 'none';
       } else if (urlParams.has('edit')) {
         const compressedData = urlParams.get('edit');
         loadSchemaFromCompressed(compressedData);
         renderEditor();
         switchTab('edit');
       } else {
-        // Default blank setup
         addQuestion('Short Answer');
         renderEditor();
       }
@@ -382,7 +382,7 @@
             optionsHTML += `
               <div class="option-row">
                 <input type="text" id="q_${i}_opt_${optIdx}" value="${escapeHtml(opt)}" onchange="syncSchemaFromEditor()">
-                <button class="btn btn-secondary btn-danger" onclick="removeOption(${i}, ${optIdx})">✕</button>
+                <button class="btn btn-danger" onclick="removeOption(${i}, ${optIdx})" style="padding: 6px 10px;">✕</button>
               </div>`;
           });
           optionsHTML += `<button class="btn btn-secondary" onclick="addOption(${i})" style="padding: 4px 8px; font-size:12px;">+ Add Option</button></div>`;
@@ -471,7 +471,6 @@
         }
       });
 
-      // Save to LocalStorage
       const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
       const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
       existing.push(responseObj);
@@ -566,11 +565,14 @@
         const response = await fetch(proxyUrl);
         const data = await response.json();
         
-        // Extract returned payload
+        // Extract returned payload from proxy
         const parsedData = JSON.parse(data.contents);
         
         if (parsedData.shorturl) {
           inputEl.value = parsedData.shorturl;
+        } else if (parsedData.errormessage) {
+          alert("Shortener Error: " + parsedData.errormessage);
+          inputEl.value = longUrl;
         } else {
           alert("Error shortening link.");
           inputEl.value = longUrl;
