@@ -225,7 +225,7 @@
             <div class="link-row">
               <input type="text" id="viewUrlInput" readonly>
               <button class="btn btn-secondary" onclick="copyToClipboard('viewUrlInput')">Copy</button>
-              <button class="btn btn-secondary" onclick="shortenUrl('viewUrlInput')">Shorten (is.gd)</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('viewUrlInput')">Shorten</button>
             </div>
           </div>
 
@@ -235,7 +235,7 @@
             <div class="link-row">
               <input type="text" id="editUrlInput" readonly>
               <button class="btn btn-secondary" onclick="copyToClipboard('editUrlInput')">Copy</button>
-              <button class="btn btn-secondary" onclick="shortenUrl('editUrlInput')">Shorten (is.gd)</button>
+              <button class="btn btn-secondary" onclick="shortenUrl('editUrlInput')">Shorten</button>
             </div>
           </div>
         </div>
@@ -548,9 +548,9 @@
       }
     }
 
-    // --- INSTANT REDIRECT SHORTENER (JSONP WITH IS.GD - NO CORS REQUIRED) ---
+    // --- INSTANT REDIRECT SHORTENER (TINYURL VIA CORSPROXY.IO) ---
 
-    function shortenUrl(inputId) {
+    async function shortenUrl(inputId) {
       const inputEl = document.getElementById(inputId);
       const longUrl = inputEl.value;
 
@@ -559,45 +559,26 @@
       const originalValue = longUrl;
       inputEl.value = "Shortening...";
 
-      const callbackName = 'isgd_cb_' + Math.random().toString(36).substr(2, 8);
+      try {
+        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`
+        );
 
-      const timeoutId = setTimeout(() => {
-        delete window[callbackName];
-        const scriptEl = document.getElementById(callbackName);
-        if (scriptEl) scriptEl.remove();
-        alert("Shortening timed out. Using original link.");
-        inputEl.value = originalValue;
-      }, 8000);
+        const response = await fetch(proxyUrl);
 
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        if (data.shorturl) {
-          inputEl.value = data.shorturl;
-        } else if (data.errormessage) {
-          alert("is.gd Error: " + data.errormessage);
-          inputEl.value = originalValue;
+        if (!response.ok) throw new Error("Shortening failed");
+
+        const shortUrl = await response.text();
+
+        if (shortUrl && shortUrl.startsWith("http")) {
+          inputEl.value = shortUrl;
         } else {
-          alert("Could not shorten link.");
-          inputEl.value = originalValue;
+          throw new Error("Invalid short URL returned");
         }
-
-        delete window[callbackName];
-        const scriptEl = document.getElementById(callbackName);
-        if (scriptEl) scriptEl.remove();
-      };
-
-      const script = document.createElement('script');
-      script.id = callbackName;
-      script.src = `https://is.gd/create.php?format=json&callback=${callbackName}&url=${encodeURIComponent(longUrl)}`;
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        delete window[callbackName];
-        script.remove();
-        alert("Network error: Could not reach is.gd");
+      } catch (err) {
+        alert("Could not shorten link. Returning original URL.");
         inputEl.value = originalValue;
-      };
-
-      document.body.appendChild(script);
+      }
     }
 
     function copyToClipboard(inputId) {
