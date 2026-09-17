@@ -548,39 +548,56 @@
       }
     }
 
-    // --- INSTANT REDIRECT SHORTENER (IS.GD VIA ALLORIGINS) ---
+    // --- INSTANT REDIRECT SHORTENER (JSONP WITH IS.GD - NO CORS REQUIRED) ---
 
-    async function shortenUrl(inputId) {
+    function shortenUrl(inputId) {
       const inputEl = document.getElementById(inputId);
       const longUrl = inputEl.value;
-      if (!longUrl) return;
 
-      try {
-        inputEl.value = "Shortening...";
-        
-        // Target is.gd API via free open-source CORS proxy
-        const targetUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-        
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        
-        // Extract returned payload from proxy
-        const parsedData = JSON.parse(data.contents);
-        
-        if (parsedData.shorturl) {
-          inputEl.value = parsedData.shorturl;
-        } else if (parsedData.errormessage) {
-          alert("Shortener Error: " + parsedData.errormessage);
-          inputEl.value = longUrl;
+      if (!longUrl || longUrl.startsWith('Shortening...')) return;
+
+      const originalValue = longUrl;
+      inputEl.value = "Shortening...";
+
+      const callbackName = 'isgd_cb_' + Math.random().toString(36).substr(2, 8);
+
+      const timeoutId = setTimeout(() => {
+        delete window[callbackName];
+        const scriptEl = document.getElementById(callbackName);
+        if (scriptEl) scriptEl.remove();
+        alert("Shortening timed out. Using original link.");
+        inputEl.value = originalValue;
+      }, 8000);
+
+      window[callbackName] = function(data) {
+        clearTimeout(timeoutId);
+        if (data.shorturl) {
+          inputEl.value = data.shorturl;
+        } else if (data.errormessage) {
+          alert("is.gd Error: " + data.errormessage);
+          inputEl.value = originalValue;
         } else {
-          alert("Error shortening link.");
-          inputEl.value = longUrl;
+          alert("Could not shorten link.");
+          inputEl.value = originalValue;
         }
-      } catch (e) {
-        alert("Network error: Could not shorten link.");
-        inputEl.value = longUrl;
-      }
+
+        delete window[callbackName];
+        const scriptEl = document.getElementById(callbackName);
+        if (scriptEl) scriptEl.remove();
+      };
+
+      const script = document.createElement('script');
+      script.id = callbackName;
+      script.src = `https://is.gd/create.php?format=json&callback=${callbackName}&url=${encodeURIComponent(longUrl)}`;
+      script.onerror = function() {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        script.remove();
+        alert("Network error: Could not reach is.gd");
+        inputEl.value = originalValue;
+      };
+
+      document.body.appendChild(script);
     }
 
     function copyToClipboard(inputId) {
