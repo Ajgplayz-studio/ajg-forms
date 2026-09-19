@@ -134,6 +134,7 @@
 
     .btn-danger {
       background: #d93025;
+      color: white;
     }
 
     .option-row {
@@ -313,6 +314,7 @@
       } else if (tab === 'responses') {
         document.getElementById('tabResponses').classList.add('active');
         document.getElementById('responsesSection').classList.remove('hidden');
+        syncSchemaFromEditor(); // Sync current state before rendering responses
         renderResponses();
       }
     }
@@ -345,14 +347,16 @@
     }
 
     function syncSchemaFromEditor() {
-      formSchema.title = document.getElementById('formTitle').value;
-      formSchema.description = document.getElementById('formDesc').value;
+      const titleEl = document.getElementById('formTitle');
+      const descEl = document.getElementById('formDesc');
+      if (titleEl) formSchema.title = titleEl.value;
+      if (descEl) formSchema.description = descEl.value;
 
       formSchema.questions.forEach((q, i) => {
-        const titleEl = document.getElementById(`q_title_${i}`);
-        const typeEl = document.getElementById(`q_type_${i}`);
-        if (titleEl) q.title = titleEl.value;
-        if (typeEl) q.type = typeEl.value;
+        const qTitleEl = document.getElementById(`q_title_${i}`);
+        const qTypeEl = document.getElementById(`q_type_${i}`);
+        if (qTitleEl) q.title = qTitleEl.value;
+        if (qTypeEl) q.type = qTypeEl.value;
 
         if (['Multiple Choice', 'Checkboxes', 'Dropdown'].includes(q.type)) {
           q.options.forEach((_, optIdx) => {
@@ -485,7 +489,21 @@
 
     function renderResponses() {
       const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
-      const responses = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      let responses = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+      // Fallback: search all local storage keys starting with 'ajg_responses_' if current title yields no results
+      if (responses.length === 0) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.startsWith('ajg_responses_')) {
+            const found = JSON.parse(localStorage.getItem(key) || '[]');
+            if (found.length > 0) {
+              responses = responses.concat(found);
+            }
+          }
+        }
+      }
+
       const container = document.getElementById('responsesList');
 
       if (responses.length === 0) {
@@ -514,9 +532,13 @@
     }
 
     function clearResponses() {
-      if (confirm('Are you sure you want to clear all responses for this form title?')) {
-        const storageKey = 'ajg_responses_' + (formSchema.title.replace(/\s+/g, '_'));
-        localStorage.removeItem(storageKey);
+      if (confirm('Are you sure you want to clear all responses?')) {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key.startsWith('ajg_responses_')) {
+            localStorage.removeItem(key);
+          }
+        }
         renderResponses();
       }
     }
@@ -559,7 +581,7 @@
       try {
         inputEl.value = "Shortening...";
         
-        // Uses TinyURL's free plaintext API (CORS-friendly on HTTPS)
+        // Uses TinyURL's free plaintext API
         const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
         const shortUrl = await res.text();
 
